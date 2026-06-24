@@ -10,12 +10,80 @@ body {
   color: #e0e0e0;
 }
 
+.workspace {
+  display: flex;
+  height: 100vh;
+}
+
 .app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  flex: 1;
+  min-width: 0;
   max-width: 800px;
   margin: 0 auto;
+  height: 100%;
+}
+
+.workspace.with-pdf .app {
+  max-width: none;
+  margin: 0;
+}
+
+/* PDF side panel */
+.pdf-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #2a2a2a;
+  background: #161616;
+}
+
+.pdf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #2a2a2a;
+  font-size: 14px;
+  color: #e0e0e0;
+}
+
+.pdf-close {
+  background: transparent;
+  color: #888;
+  font-size: 22px;
+  line-height: 1;
+  padding: 0 8px;
+}
+
+.pdf-close:hover {
+  color: #fff;
+}
+
+.pdf-iframe {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #1e1e1e;
+}
+
+/* Clickable page references in AI answers */
+.page-link {
+  display: inline;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: #60a5fa;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.page-link:hover {
+  color: #93c5fd;
 }
 
 /* Header */

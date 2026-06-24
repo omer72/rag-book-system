@@ -3,6 +3,32 @@
 import { useState, useRef, useEffect } from "react";
 import "./globals.css";
 
+// ponytail: simple regex covering common Hebrew/English page mentions
+const PAGE_RE = /(?:page|p\.|עמוד|עמ['׳]|דף)\s*(\d+)/gi;
+
+function renderWithPageLinks(text, onPageClick) {
+  const parts = [];
+  let last = 0;
+  PAGE_RE.lastIndex = 0;
+  let m;
+  while ((m = PAGE_RE.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    const page = parseInt(m[1], 10);
+    parts.push(
+      <button
+        key={`${m.index}-${page}`}
+        className="page-link"
+        onClick={() => onPageClick(page)}
+      >
+        {m[0]}
+      </button>,
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
+
 export default function Home() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -13,6 +39,7 @@ export default function Home() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [asking, setAsking] = useState(false);
+  const [pdfPage, setPdfPage] = useState(null);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -68,6 +95,7 @@ export default function Home() {
         setFileReady(true);
         setFileName(data.fileName || file.name);
         setMessages([]);
+        setPdfPage(null);
         setNeedsUpload(false);
         setLoading(false);
       } else {
@@ -129,107 +157,134 @@ export default function Home() {
   };
 
   return (
-    <div className="app">
-      <header className="header">
-        <h1>RAG Book Chat</h1>
-        {fileReady && <span className="file-badge">{fileName}</span>}
-        {loading && !needsUpload && (
-          <span className="file-badge loading-badge">
-            {uploading ? "Uploading..." : "Loading book..."}
-          </span>
-        )}
-        {fileReady && !uploading && (
-          <button
-            className="btn"
-            style={{ marginLeft: "auto", fontSize: 12, padding: "4px 10px" }}
-            onClick={() => fileInputRef.current?.click()}
-            disabled={asking || uploading}
-          >
-            Replace
-          </button>
-        )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/pdf"
-          style={{ display: "none" }}
-          onChange={handleUpload}
-        />
-      </header>
+    <div className={`workspace${pdfPage ? " with-pdf" : ""}`}>
+      <div className="app">
+        <header className="header">
+          <h1>RAG Book Chat</h1>
+          {fileReady && <span className="file-badge">{fileName}</span>}
+          {loading && !needsUpload && (
+            <span className="file-badge loading-badge">
+              {uploading ? "Uploading..." : "Loading book..."}
+            </span>
+          )}
+          {fileReady && !uploading && (
+            <button
+              className="btn"
+              style={{ marginLeft: "auto", fontSize: 12, padding: "4px 10px" }}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={asking || uploading}
+            >
+              Replace
+            </button>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf"
+            style={{ display: "none" }}
+            onChange={handleUpload}
+          />
+        </header>
 
-      <div className="messages">
-        {needsUpload && (
-          <div className="empty-state">
-            <div className="empty-icon">📤</div>
-            <p>Upload a PDF book to start chatting.</p>
+        <div className="messages">
+          {needsUpload && (
+            <div className="empty-state">
+              <div className="empty-icon">📤</div>
+              <p>Upload a PDF book to start chatting.</p>
+              <button
+                className="btn send-btn"
+                style={{ marginTop: 16 }}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? "Uploading..." : "Choose PDF"}
+              </button>
+              {uploadError && (
+                <p style={{ color: "#f87171", marginTop: 12 }}>{uploadError}</p>
+              )}
+            </div>
+          )}
+          {!needsUpload && messages.length === 0 && !loading && fileReady && (
+            <div className="empty-state">
+              <div className="empty-icon">📚</div>
+              <p>Ask me anything about the book!</p>
+            </div>
+          )}
+          {!needsUpload && loading && messages.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-icon">⏳</div>
+              <p>{uploading ? "Uploading and processing..." : "Loading book..."}</p>
+            </div>
+          )}
+          {messages.map((msg, i) => (
+            <div key={i} className={`message ${msg.role}`}>
+              <div className="bubble">
+                {msg.role === "ai" && <span className="label">AI</span>}
+                {msg.role === "user" && <span className="label">You</span>}
+                <p dir="auto">
+                  {msg.role === "ai"
+                    ? renderWithPageLinks(msg.text, setPdfPage)
+                    : msg.text}
+                </p>
+              </div>
+            </div>
+          ))}
+          {asking && (
+            <div className="message ai">
+              <div className="bubble thinking">
+                <span className="dot" />
+                <span className="dot" />
+                <span className="dot" />
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <footer className="input-area">
+          <div className="chat-row">
+            <input
+              type="text"
+              dir="auto"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={
+                fileReady ? "Ask a question about the book..." : "Waiting for book to load..."
+              }
+              disabled={!fileReady || asking}
+            />
             <button
               className="btn send-btn"
-              style={{ marginTop: 16 }}
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
+              onClick={handleSend}
+              disabled={!fileReady || asking || !input.trim()}
             >
-              {uploading ? "Uploading..." : "Choose PDF"}
+              Send
             </button>
-            {uploadError && (
-              <p style={{ color: "#f87171", marginTop: 12 }}>{uploadError}</p>
-            )}
           </div>
-        )}
-        {!needsUpload && messages.length === 0 && !loading && fileReady && (
-          <div className="empty-state">
-            <div className="empty-icon">📚</div>
-            <p>Ask me anything about the book!</p>
-          </div>
-        )}
-        {!needsUpload && loading && messages.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-icon">⏳</div>
-            <p>{uploading ? "Uploading and processing..." : "Loading book..."}</p>
-          </div>
-        )}
-        {messages.map((msg, i) => (
-          <div key={i} className={`message ${msg.role}`}>
-            <div className="bubble">
-              {msg.role === "ai" && <span className="label">AI</span>}
-              {msg.role === "user" && <span className="label">You</span>}
-              <p dir="auto">{msg.text}</p>
-            </div>
-          </div>
-        ))}
-        {asking && (
-          <div className="message ai">
-            <div className="bubble thinking">
-              <span className="dot" />
-              <span className="dot" />
-              <span className="dot" />
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+        </footer>
       </div>
 
-      <footer className="input-area">
-        <div className="chat-row">
-          <input
-            type="text"
-            dir="auto"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              fileReady ? "Ask a question about the book..." : "Waiting for book to load..."
-            }
-            disabled={!fileReady || asking}
+      {pdfPage && (
+        <aside className="pdf-panel">
+          <div className="pdf-header">
+            <span>📖 Page {pdfPage}</span>
+            <button
+              className="btn pdf-close"
+              onClick={() => setPdfPage(null)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+          <iframe
+            key={pdfPage}
+            title="Book"
+            src={`/api/book#page=${pdfPage}`}
+            className="pdf-iframe"
           />
-          <button
-            className="btn send-btn"
-            onClick={handleSend}
-            disabled={!fileReady || asking || !input.trim()}
-          >
-            Send
-          </button>
-        </div>
-      </footer>
+        </aside>
+      )}
     </div>
   );
 }
