@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import crypto from "crypto";
 import { FILE_CACHE_PATH as CACHE_FILE } from "./paths.js";
 
