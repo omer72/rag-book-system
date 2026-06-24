@@ -1,0 +1,26 @@
+{
+  "name": "rag-book-system",
+  "version": "1.0.0",
+  "description": "RAG system for books (PDF) using Gemini API",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start:next": "next start",
+    "start": "node index.js",
+    "query": "node index.js",
+    "multi": "node index.js book.pdf --multi",
+    "cached": "node index.js book.pdf --cached"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^17.3.1",
+    "next": "^16.2.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  }
+}
