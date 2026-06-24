@@ -7,5 +7,6 @@ export async function GET() {
     loading: state.loading,
     fileName: state.currentFileName,
     error: state.error,
+    needsUpload: state.needsUpload,
   });
 }

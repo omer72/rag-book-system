@@ -31,12 +31,11 @@ Two front-ends share the same core: a Node CLI (`index.js`) and a Next.js App Ro
 
 ### Next.js side (`app/`)
 
-- `app/api/state.js` holds a **module-level singleton** (`state.currentFileUri`, `loading`, `error`) and kicks off the upload of a hard-coded `book.pdf` from CWD the first time the module is imported. This is intentionally simple and only works under a single long-lived Node process (`next dev` or a single `next start`); it will not survive serverless multi-instance deploys.
+- `app/api/state.js` holds a **module-level singleton** (`state.currentFileUri`, `loading`, `error`, `needsUpload`). On first import it auto-loads `book.pdf` from CWD if present; otherwise it sets `needsUpload=true` and waits for the UI to POST a file. Singleton only works under a single long-lived Node process (`next dev` or a single `next start`); it will not survive serverless multi-instance deploys.
 - `app/api/status/route.js` exposes the singleton for the client to poll every 1s.
 - `app/api/ask/route.js` calls `askQuestion()` against `state.currentFileUri`.
-- `app/page.js` is a single client component that polls `/api/status` until ready, then chats via `/api/ask`.
-
-To support a different PDF (or upload from the browser), the hard-coded `BOOK_PATH` in `app/api/state.js` is the single point to change.
+- `app/api/upload/route.js` accepts a PDF as `multipart/form-data` (`file` field), writes it to `./book.pdf`, and awaits `loadBook()` so the response indicates ready/error in one shot.
+- `app/page.js` is a single client component that polls `/api/status`; renders an upload button when `needsUpload`, then chats via `/api/ask`.
 
 ### Language note
 
