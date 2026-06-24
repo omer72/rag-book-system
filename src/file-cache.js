@@ -1,10 +1,7 @@
 import fs from "fs";
-import path from "path";
 import crypto from "crypto";
-import { fileURLToPath } from "url";
+import { FILE_CACHE_PATH as CACHE_FILE } from "./paths.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CACHE_FILE = path.join(__dirname, "..", "file-cache.json");
 const MAX_AGE_HOURS = 47; // מרווח ביטחון - גוגל מוחקת אחרי 48 שעות
 
 /**

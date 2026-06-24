@@ -1,11 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const SYSTEM_INSTRUCTION =
-  "אתה מומחה לתוכן הספר המצורף. " +
-  "ענה אך ורק על בסיס המידע בקובץ. " +
-  "אם המידע לא קיים בספר, אמור 'המידע לא נמצא בספר'. " +
-  "ציין מספרי עמודים רלוונטיים כשאפשר. " +
-  "ענה בשפה שבה נשאלת השאלה.";
+  "You are an expert on the content of the attached book. " +
+  "LANGUAGE RULE: Detect the language of the user's question and answer ENTIRELY in that same language. " +
+  "If the question is in English, answer in English. If in Hebrew, answer in Hebrew. Never mix languages. " +
+  "Answer strictly based on the content of the file. " +
+  "If the information is not in the book, say so in the user's language. " +
+  "Cite relevant page numbers when possible, and follow each page citation with a short verbatim quote (5-15 words) from that page in double quotes. " +
+  "Examples: page 12: \"the exact sentence from the book\". עמוד 12: \"המשפט המדויק מהספר\".";
 
 /**
  * שואל שאלה על ספר שהועלה

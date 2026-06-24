@@ -1,7 +1,7 @@
 import fs from "fs/promises";
-import path from "path";
 import { NextResponse } from "next/server";
 import { state, loadBook } from "../state";
+import { BOOK_PATH } from "../../../src/paths.js";
 
 export async function POST(request) {
   try {
@@ -16,12 +16,11 @@ export async function POST(request) {
     }
 
     const savedName = file.name || "book.pdf";
-    const savePath = path.join(process.cwd(), "book.pdf");
     const bytes = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(savePath, bytes);
+    await fs.writeFile(BOOK_PATH, bytes);
 
     // ponytail: await the load so the client sees ready in one shot
-    await loadBook(savePath, savedName);
+    await loadBook(BOOK_PATH, savedName);
 
     if (state.error) {
       return NextResponse.json({ error: state.error }, { status: 500 });

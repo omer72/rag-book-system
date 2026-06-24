@@ -5,6 +5,8 @@ import "./globals.css";
 
 // ponytail: simple regex covering common Hebrew/English page mentions
 const PAGE_RE = /(?:page|p\.|עמוד|עמ['׳]|דף)\s*(\d+)/gi;
+// Optional quote (in any common quote mark) right after a page mention
+const QUOTE_AFTER_RE = /^[\s:,\-–—]*["“״'‘]([^"”״'’\n]{3,200})["”״'’]/;
 
 function renderWithPageLinks(text, onPageClick) {
   const parts = [];
@@ -14,16 +16,19 @@ function renderWithPageLinks(text, onPageClick) {
   while ((m = PAGE_RE.exec(text)) !== null) {
     if (m.index > last) parts.push(text.slice(last, m.index));
     const page = parseInt(m[1], 10);
+    const afterEnd = m.index + m[0].length;
+    const q = text.slice(afterEnd, afterEnd + 300).match(QUOTE_AFTER_RE);
+    const quote = q ? q[1] : null;
     parts.push(
       <button
         key={`${m.index}-${page}`}
         className="page-link"
-        onClick={() => onPageClick(page)}
+        onClick={() => onPageClick({ page, quote })}
       >
         {m[0]}
       </button>,
     );
-    last = m.index + m[0].length;
+    last = afterEnd;
   }
   if (last < text.length) parts.push(text.slice(last));
   return parts;
@@ -39,7 +44,7 @@ export default function Home() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [asking, setAsking] = useState(false);
-  const [pdfPage, setPdfPage] = useState(null);
+  const [pdfTarget, setPdfTarget] = useState(null);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -95,7 +100,7 @@ export default function Home() {
         setFileReady(true);
         setFileName(data.fileName || file.name);
         setMessages([]);
-        setPdfPage(null);
+        setPdfTarget(null);
         setNeedsUpload(false);
         setLoading(false);
       } else {
@@ -157,7 +162,7 @@ export default function Home() {
   };
 
   return (
-    <div className={`workspace${pdfPage ? " with-pdf" : ""}`}>
+    <div className={`workspace${pdfTarget ? " with-pdf" : ""}`}>
       <div className="app">
         <header className="header">
           <h1>RAG Book Chat</h1>
@@ -223,7 +228,7 @@ export default function Home() {
                 {msg.role === "user" && <span className="label">You</span>}
                 <p dir="auto">
                   {msg.role === "ai"
-                    ? renderWithPageLinks(msg.text, setPdfPage)
+                    ? renderWithPageLinks(msg.text, setPdfTarget)
                     : msg.text}
                 </p>
               </div>
@@ -265,22 +270,29 @@ export default function Home() {
         </footer>
       </div>
 
-      {pdfPage && (
+      {pdfTarget && (
         <aside className="pdf-panel">
           <div className="pdf-header">
-            <span>📖 Page {pdfPage}</span>
+            <span>
+              📖 Page {pdfTarget.page}
+              {pdfTarget.quote && (
+                <em className="pdf-quote"> — “{pdfTarget.quote}”</em>
+              )}
+            </span>
             <button
               className="btn pdf-close"
-              onClick={() => setPdfPage(null)}
+              onClick={() => setPdfTarget(null)}
               aria-label="Close"
             >
               ×
             </button>
           </div>
           <iframe
-            key={pdfPage}
+            key={`${pdfTarget.page}-${pdfTarget.quote || ""}`}
             title="Book"
-            src={`/api/book#page=${pdfPage}`}
+            src={`/api/book#page=${pdfTarget.page}${
+              pdfTarget.quote ? `&search=${encodeURIComponent(pdfTarget.quote)}` : ""
+            }`}
             className="pdf-iframe"
           />
         </aside>

@@ -1,6 +1,7 @@
 import fs from "fs";
 import { uploadAndWait } from "../../src/uploader.js";
 import { cleanExpired } from "../../src/file-cache.js";
+import { BOOK_PATH } from "../../src/paths.js";
 
 export const state = {
   currentFileUri: null,
@@ -10,7 +11,6 @@ export const state = {
   needsUpload: false,
 };
 
-const DEFAULT_BOOK_PATH = "book.pdf";
 const DEFAULT_BOOK_NAME = "My Book";
 
 export async function loadBook(filePath, displayName) {
@@ -36,8 +36,8 @@ export async function loadBook(filePath, displayName) {
 }
 
 if (!state.currentFileUri && !state.loading) {
-  if (fs.existsSync(DEFAULT_BOOK_PATH)) {
-    loadBook(DEFAULT_BOOK_PATH, DEFAULT_BOOK_NAME);
+  if (fs.existsSync(BOOK_PATH)) {
+    loadBook(BOOK_PATH, DEFAULT_BOOK_NAME);
   } else {
     state.needsUpload = true;
   }

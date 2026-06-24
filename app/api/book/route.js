@@ -1,10 +1,10 @@
 import fs from "fs/promises";
-import path from "path";
 import { NextResponse } from "next/server";
+import { BOOK_PATH } from "../../../src/paths.js";
 
 export async function GET() {
   try {
-    const buf = await fs.readFile(path.join(process.cwd(), "book.pdf"));
+    const buf = await fs.readFile(BOOK_PATH);
     return new NextResponse(buf, {
       headers: {
         "Content-Type": "application/pdf",
