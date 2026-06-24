@@ -54,10 +54,9 @@ export default function Home() {
       return;
     }
 
+    const wasReady = fileReady;
     setUploadError("");
     setUploading(true);
-    setNeedsUpload(false);
-    setLoading(true);
 
     try {
       const fd = new FormData();
@@ -68,18 +67,23 @@ export default function Home() {
       if (data.ready) {
         setFileReady(true);
         setFileName(data.fileName || file.name);
+        setMessages([]);
+        setNeedsUpload(false);
         setLoading(false);
       } else {
-        setUploadError(data.error || "Upload failed.");
-        setNeedsUpload(true);
-        setLoading(false);
+        const msg = data.error || "Upload failed.";
+        setUploadError(msg);
+        if (!wasReady) setNeedsUpload(true);
+        else setMessages((prev) => [...prev, { role: "system", text: `Replace failed: ${msg}` }]);
       }
     } catch (err) {
-      setUploadError(err.message || "Upload failed.");
-      setNeedsUpload(true);
-      setLoading(false);
+      const msg = err.message || "Upload failed.";
+      setUploadError(msg);
+      if (!wasReady) setNeedsUpload(true);
+      else setMessages((prev) => [...prev, { role: "system", text: `Replace failed: ${msg}` }]);
     } finally {
       setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -134,6 +138,23 @@ export default function Home() {
             {uploading ? "Uploading..." : "Loading book..."}
           </span>
         )}
+        {fileReady && !uploading && (
+          <button
+            className="btn"
+            style={{ marginLeft: "auto", fontSize: 12, padding: "4px 10px" }}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={asking || uploading}
+          >
+            Replace
+          </button>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/pdf"
+          style={{ display: "none" }}
+          onChange={handleUpload}
+        />
       </header>
 
       <div className="messages">
@@ -149,13 +170,6 @@ export default function Home() {
             >
               {uploading ? "Uploading..." : "Choose PDF"}
             </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/pdf"
-              style={{ display: "none" }}
-              onChange={handleUpload}
-            />
             {uploadError && (
               <p style={{ color: "#f87171", marginTop: 12 }}>{uploadError}</p>
             )}
@@ -178,7 +192,7 @@ export default function Home() {
             <div className="bubble">
               {msg.role === "ai" && <span className="label">AI</span>}
               {msg.role === "user" && <span className="label">You</span>}
-              <p>{msg.text}</p>
+              <p dir="auto">{msg.text}</p>
             </div>
           </div>
         ))}
@@ -198,6 +212,7 @@ export default function Home() {
         <div className="chat-row">
           <input
             type="text"
+            dir="auto"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
